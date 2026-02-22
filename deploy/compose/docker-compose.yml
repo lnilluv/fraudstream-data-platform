@@ -1,6 +1,5 @@
 services:
   fastapi:
-    container_name: fastapi
     build:
       context: ../../confluent/containers
       dockerfile: app/fastapi/Dockerfile
@@ -16,7 +15,6 @@ services:
     networks: [platform]
 
   streamlit:
-    container_name: streamlit
     build:
       context: ../../confluent/containers/app/streamlit
       dockerfile: Dockerfile
@@ -27,7 +25,6 @@ services:
     networks: [platform]
 
   mlflow:
-    container_name: mlflow
     build:
       context: ../../confluent/containers/app/mlflow
       dockerfile: Dockerfile
@@ -42,7 +39,6 @@ services:
     networks: [platform]
 
   postgresdb:
-    container_name: postgresdb
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -59,7 +55,6 @@ services:
     networks: [platform]
 
   mysqldb:
-    container_name: mysqldb
     image: mysql:8.4
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -77,14 +72,14 @@ services:
     networks: [platform]
 
   kafka_worker:
-    container_name: fraud_worker
     build:
       context: ../../confluent
       dockerfile: Dockerfiles/Dockerfile
     working_dir: /home/app
     volumes:
       - ../../confluent:/home/app
-    command: sleep infinity
+    entrypoint: ["/bin/sh", "-c"]
+    command: "sleep infinity"
     restart: unless-stopped
     networks: [platform]
 
@@ -111,7 +106,6 @@ services:
 
   airflow-webserver:
     image: apache/airflow:2.10.5-python3.10
-    container_name: airflow-webserver
     profiles: ["airflow"]
     depends_on:
       postgresdb:
@@ -134,7 +128,6 @@ services:
 
   airflow-scheduler:
     image: apache/airflow:2.10.5-python3.10
-    container_name: airflow-scheduler
     profiles: ["airflow"]
     depends_on:
       postgresdb:
