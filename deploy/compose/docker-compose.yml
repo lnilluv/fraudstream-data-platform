@@ -1,0 +1,162 @@
+services:
+  fastapi:
+    container_name: fastapi
+    build:
+      context: ../../confluent/containers
+      dockerfile: app/fastapi/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresdb:5432/${POSTGRES_DB}
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [platform]
+
+  streamlit:
+    container_name: streamlit
+    build:
+      context: ../../confluent/containers/app/streamlit
+      dockerfile: Dockerfile
+    command: streamlit run --server.port 8501 app.py
+    expose:
+      - "8501"
+    restart: unless-stopped
+    networks: [platform]
+
+  mlflow:
+    container_name: mlflow
+    build:
+      context: ../../confluent/containers/app/mlflow
+      dockerfile: Dockerfile
+    command: mlflow server --backend-store-uri mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysqldb:3306/${MYSQL_DATABASE} --default-artifact-root s3://replace-me/artifacts --host 0.0.0.0
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      mysqldb:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [platform]
+
+  postgresdb:
+    container_name: postgresdb
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks: [platform]
+
+  mysqldb:
+    container_name: mysqldb
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+    networks: [platform]
+
+  kafka_worker:
+    container_name: fraud_worker
+    build:
+      context: ../../confluent
+      dockerfile: Dockerfiles/Dockerfile
+    working_dir: /home/app
+    volumes:
+      - ../../confluent:/home/app
+    command: sleep infinity
+    restart: unless-stopped
+    networks: [platform]
+
+  airflow-init:
+    image: apache/airflow:2.10.5-python3.10
+    profiles: ["airflow"]
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresdb:5432/${POSTGRES_DB}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USERNAME}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD}
+      _AIRFLOW_DB_MIGRATE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+    user: "${AIRFLOW_UID}:0"
+    volumes:
+      - ../../orchestration/airflow/dags:/opt/airflow/dags
+      - ../../src:/opt/airflow/src
+    command: version
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    networks: [platform]
+
+  airflow-webserver:
+    image: apache/airflow:2.10.5-python3.10
+    container_name: airflow-webserver
+    profiles: ["airflow"]
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresdb:5432/${POSTGRES_DB}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    user: "${AIRFLOW_UID}:0"
+    volumes:
+      - ../../orchestration/airflow/dags:/opt/airflow/dags
+      - ../../src:/opt/airflow/src
+    command: webserver
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks: [platform]
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.5-python3.10
+    container_name: airflow-scheduler
+    profiles: ["airflow"]
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresdb:5432/${POSTGRES_DB}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    user: "${AIRFLOW_UID}:0"
+    volumes:
+      - ../../orchestration/airflow/dags:/opt/airflow/dags
+      - ../../src:/opt/airflow/src
+    command: scheduler
+    restart: unless-stopped
+    networks: [platform]
+
+networks:
+  platform:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mysql_data:
