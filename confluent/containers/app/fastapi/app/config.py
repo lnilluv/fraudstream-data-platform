@@ -1,12 +1,13 @@
 # app/config.py
 
-import os
-
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    db_url: str = Field(..., env='DATABASE_URL')
+    model_config = SettingsConfigDict(extra="ignore")
+
+    db_url: str = Field(validation_alias="DATABASE_URL")
 
     @property
     def async_db_url(self) -> str:
