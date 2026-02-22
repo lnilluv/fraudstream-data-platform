@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1 # Define version of the API where are going to use
+kind: Ingress # Define the resource used
+metadata:
+  name: mlflow-ingress # Define a name for that resource
+spec:
+  rules:
+    - host: mlflow.fraud-detection.live  # Define the host name (replace YOUR_MINIKUBE_IP by an IP like 198.169.10.11)
+      http:
+        paths:
+          - path: / # Define the path of where your service should be accessible (here it would be http://streamlit.YOUR_MINIKUBE_IP.nip.io)
+            pathType: Prefix # Define how the URL should be recognized
+            backend:
+              service:
+                name: dashboard-service # Define the name of the service mapped to this host
+                port:
+                  number: 80 # Define port number to access the app from the host url.

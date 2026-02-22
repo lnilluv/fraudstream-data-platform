@@ -1,0 +1,28 @@
+{
+    "name": "PostgresSinkConnector_0",
+    "config": {
+      "topics": "fraud_detection",
+      "input.data.format": "JSON_SR",
+      "delete.enabled": "false",
+      "connector.class": "PostgresSink",
+      "name": "PostgresSinkConnector_0",
+      "kafka.auth.mode": "KAFKA_API_KEY",
+      "kafka.api.key": "replace-me",
+      "kafka.api.secret": "****************************************************************",
+      "connection.host": "replace-me",
+      "connection.port": "5432",
+      "connection.user": "replace-me",
+      "connection.password": "************",
+      "db.name": "replace-me",
+      "ssl.mode": "prefer",
+      "insert.mode": "INSERT",
+      "table.name.format": "${topic}",
+      "table.types": "TABLE",
+      "db.timezone": "UTC",
+      "auto.create": "false",
+      "auto.evolve": "false",
+      "quote.sql.identifiers": "ALWAYS",
+      "batch.sizes": "3000",
+      "tasks.max": "1"
+    }
+  }

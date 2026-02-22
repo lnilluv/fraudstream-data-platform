@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-deployment
+spec:
+  selector:
+    matchLabels:
+      app: mlflow-dashboard
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: mlflow-dashboard
+    spec:
+      containers:
+        - name: mlflow-server
+          image: jedha/sample-mlflow-server
+
+          ## 👇 This is the part that you need to pay attention to 👇 ##
+          envFrom:
+            - secretRef:
+                name: mlflow-env-variables
+          ####
+
+          ports:
+            - containerPort: 8080

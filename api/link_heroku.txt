@@ -1,0 +1,16 @@
+
+Build docker image and run locally :
+
+     - docker build . -t apicoco
+     - docker run -it -v "$(pwd):/home/app" -p 4000:4000 -e PORT=4000 apicoco
+     
+    Get your Heroku app ! :
+
+      - heroku create getaround-pricing
+      - heroku container:push web -a getaround-pricing
+      - heroku container:release web -a getaround-pricing
+      - heroku open -a getaround-pricing
+
+
+
+https://getaround-pricing.herokuapp.com/docs#/
