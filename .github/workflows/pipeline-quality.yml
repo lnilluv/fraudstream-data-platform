@@ -1,0 +1,32 @@
+name: pipeline-quality
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run unit tests
+        run: |
+          python -m unittest \
+            tests/test_evaluate_transaction.py \
+            tests/test_airflow_dag.py \
+            tests/test_kafka_runtime.py \
+            tests/test_lakehouse_layout.py \
+            tests/test_dbt_project_scaffold.py \
+            tests/test_kafka_message_contract.py
+
+      - name: Validate compose configuration
+        run: |
+          docker compose -f deploy/compose/docker-compose.yml --profile observability --profile lakehouse config --services
