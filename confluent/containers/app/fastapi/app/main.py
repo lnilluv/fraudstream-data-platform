@@ -3,11 +3,9 @@ import mlflow
 import uvicorn
 import json
 import pandas as pd 
-from pydantic import BaseModel
 from typing import Literal, List, Union
 from fastapi import FastAPI, File, UploadFile
-from fastapi import FastAPI
-from app.db import database, User
+from app.db import dispose_engine, get_or_create_user, get_users, init_db
 import warnings
 import platform
 from PIL import Image
@@ -19,7 +17,7 @@ app = FastAPI(title="BrainSight Public API")
 
 @app.get("/")
 async def read_root():
-    return await User.objects.all()
+    return await get_users()
 
 #class PredictionFeatures(BaseModel):
 #    BrainDisease: float
@@ -77,13 +75,10 @@ async def post_picture(file: UploadFile= File(...)):
 
 @app.on_event("startup")
 async def startup():
-    if not database.is_connected:
-        await database.connect()
-    # create a dummy entry
-    await User.objects.get_or_create(email="test@test.com")
+    await init_db()
+    await get_or_create_user(email="test@test.com")
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    if database.is_connected:
-        await database.disconnect()
+    await dispose_engine()
