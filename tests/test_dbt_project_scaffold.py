@@ -17,6 +17,13 @@ class DbtProjectScaffoldTestCase(unittest.TestCase):
         self.assertTrue(gold_model.exists())
         self.assertIn("ref('stg_transactions')", gold_model.read_text())
 
+    def test_source_file_declares_freshness_windows(self) -> None:
+        source_file = pathlib.Path("analytics/dbt/models/sources.yml")
+        self.assertTrue(source_file.exists())
+        source_content = source_file.read_text()
+        self.assertIn("warn_after", source_content)
+        self.assertIn("error_after", source_content)
+
 
 if __name__ == "__main__":
     unittest.main()

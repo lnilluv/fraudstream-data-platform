@@ -3,6 +3,10 @@ version: 2
 sources:
   - name: bronze
     schema: bronze
+    loaded_at_field: unix_time
+    freshness:
+      warn_after: {count: 30, period: minute}
+      error_after: {count: 60, period: minute}
     tables:
       - name: transactions_raw
         columns:

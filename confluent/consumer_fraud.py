@@ -9,6 +9,7 @@ from joblib import load as load_joblib
 
 import ccloud_lib
 from kafka_runtime import build_consumer_config, build_producer_config, get_topic_names
+from message_contract import validate_transaction_payload
 
 # Initialize configurations from "python.config" file
 KAFKA_CONFIG_FILE = os.getenv("KAFKA_CONFIG_FILE", "python.config")
@@ -57,6 +58,7 @@ try:
                 print("Record Key")
                 print(record_key)
                 record_value = json.loads(raw_value)
+                validate_transaction_payload(record_value)
                 df_cols = [
                     "cc_num",
                     "merchant",
