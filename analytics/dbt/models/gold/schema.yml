@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: fct_fraud_scores
+    description: Curated fraud scoring fact table for serving and BI.
+    columns:
+      - name: trans_num
+        tests:
+          - not_null
+          - unique
+      - name: flagged_fraud
+        tests:
+          - not_null

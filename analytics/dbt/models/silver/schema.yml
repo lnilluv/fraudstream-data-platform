@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: Standardized transaction records from bronze ingest.
+    columns:
+      - name: trans_num
+        tests:
+          - not_null
+          - unique
+      - name: amount
+        tests:
+          - not_null
+      - name: is_fraud
+        tests:
+          - accepted_values:
+              values: [0, 1]

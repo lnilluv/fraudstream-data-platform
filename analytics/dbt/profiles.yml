@@ -1,0 +1,12 @@
+fraudstream_lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: trino
+      method: none
+      user: dbt
+      host: "{{ env_var('TRINO_HOST', 'localhost') }}"
+      port: "{{ env_var('TRINO_PORT', '8081') | int }}"
+      database: iceberg
+      schema: bronze
+      threads: 4

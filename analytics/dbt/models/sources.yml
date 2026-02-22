@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: transactions_raw
+        columns:
+          - name: trans_num
+            tests:
+              - not_null
