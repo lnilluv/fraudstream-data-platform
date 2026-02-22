@@ -1,2 +1,2 @@
-xgboost
-imblearn
+xgboost==2.1.4
+imbalanced-learn==0.13.0
