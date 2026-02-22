@@ -8,6 +8,11 @@ sasl.password=replace-me
 # Best practice for higher availability in librdkafka clients prior to 1.7
 session.timeout.ms=45000
 
+# Platform topic conventions
+# KAFKA_MAIN_TOPIC defaults to fraud_detection.v1 in producer/consumer scripts
+# retry and dlq topics are derived automatically as:
+# fraud_detection.v1.retry and fraud_detection.v1.dlq
+
 # Required connection configs for Confluent Cloud Schema Registry
 schema.registry.url=https://replace-me
 basic.auth.credentials.source=USER_INFO

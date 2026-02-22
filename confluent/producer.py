@@ -1,27 +1,27 @@
-# Code inspired from Confluent Cloud official examples library
-# https://github.com/confluentinc/examples/blob/7.1.1-post/clients/cloud/python/producer.py
-
-from confluent_kafka import Producer
 import json
-import ccloud_lib # Library not installed with pip but imported from ccloud_lib.py
-import numpy as np
-import time
-import requests
 import datetime
 import os
+import time
+
+import requests
+from confluent_kafka import Producer
+
+import ccloud_lib
+from kafka_runtime import build_producer_config, get_topic_names
 
 # Initialize configurations from "python.config" file
 KAFKA_CONFIG_FILE = os.getenv("KAFKA_CONFIG_FILE", "python.config")
-CONF = ccloud_lib.read_ccloud_config(KAFKA_CONFIG_FILE) # lecture du fichier de conf
-TOPIC = "fraud_detection" # quel topic va être utilisé
+CONF = ccloud_lib.read_ccloud_config(KAFKA_CONFIG_FILE)
+TOPIC_NAMES = get_topic_names(os.getenv("KAFKA_MAIN_TOPIC", "fraud_detection.v1"))
 
 
 # Create Producer instance
-producer_conf = ccloud_lib.pop_schema_registry_params_from_config(CONF) # transmission de la configuration
-producer = Producer(producer_conf) 
+producer_conf = build_producer_config(ccloud_lib.pop_schema_registry_params_from_config(CONF))
+producer = Producer(producer_conf)
 
-# Create topic if it doesn't already exist
-ccloud_lib.create_topic(CONF, TOPIC)
+# Create topics if they don't already exist
+for topic_name in (TOPIC_NAMES.main, TOPIC_NAMES.retry, TOPIC_NAMES.dlq):
+    ccloud_lib.create_topic(CONF, topic_name)
 
 delivered_records = 0
 
@@ -35,34 +35,32 @@ def acked(err, msg):
         print("Failed to deliver message: {}".format(err))
     else:
         delivered_records += 1
-        print("Produced record to topic {} partition [{}] @ offset {}"
-                .format(msg.topic(), msg.partition(), msg.offset()))
+        print(
+            "Produced record to topic {} partition [{}] @ offset {}".format(
+                msg.topic(), msg.partition(), msg.offset()
+            )
+        )
 
-try: 
-    # Starts an infinite while loop that produces random current temperatures
+try:
     while True:
         url = "https://real-time-payments-api.herokuapp.com/current-transactions"
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         transaction = json.loads(response.json())["data"]
-        #record_key = "price"
         record_value = json.dumps({"data": transaction})
-        record_key  = str(datetime.datetime.now())
+        record_key = str(datetime.datetime.now())
         print(record_key, record_value)
 
         # This will actually send data to your topic
         producer.produce(
-            TOPIC,
-            key=record_key, # key = weather
-            value=record_value, # value = valeur random
-            on_delivery=acked
+            TOPIC_NAMES.main,
+            key=record_key,
+            value=record_value,
+            on_delivery=acked,
         )
-        # p.poll() serves delivery reports (on_delivery)
-        # from previous produce() calls thanks to acked callback
         producer.poll(0)
         time.sleep(12)
 
- # Interrupt infinite loop when hitting CTRL+C
 except KeyboardInterrupt:
     pass
 finally:
-    producer.flush() # Finish producing the latest event before stopping the whole scriptc
+    producer.flush()
