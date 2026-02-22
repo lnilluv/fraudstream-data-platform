@@ -1,0 +1,17 @@
+__pycache__/
+.ipynb_checkpoints/
+*.ipynb
+
+data/
+old/
+model/
+*.joblib
+*.pkl
+
+python.config
+.env
+containers/.env
+containers/app/streamlit/.streamlit/secrets.toml
+
+k8s/
+archive/

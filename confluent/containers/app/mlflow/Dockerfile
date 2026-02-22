@@ -1,4 +1,4 @@
-FROM python:3.10-slim-buster
-# Install python packages
+FROM python:3.10-slim
+
 COPY requirements.txt /tmp
-RUN pip install -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt

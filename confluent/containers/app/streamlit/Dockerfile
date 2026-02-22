@@ -1,9 +1,9 @@
-FROM tensorflow/tensorflow
+FROM python:3.11-slim
 
 WORKDIR /app
 
 COPY . /app/
 
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD streamlit run --server.port 4000 app.py
+CMD streamlit run --server.port 8501 app.py
